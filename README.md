@@ -137,10 +137,10 @@ realtime-webcam/
 Se utilizar este projeto em trabalhos acadêmicos, por favor cite:
 
 ```bibtex
-@software{pyscript_realtime_webcam_2024,
+@software{pyscript_realtime_webcam_2025,
   author       = {Maxwell Amaral},
   title        = {PyScript Realtime Webcam Vision},
-  year         = {2024},
+  year         = {2025},
   url          = {https://github.com/maxwellamaral/realtime-webcam-video-recognize},
   note         = {AI-assisted development with Antigravity}
 }
