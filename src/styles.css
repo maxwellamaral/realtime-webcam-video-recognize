@@ -381,3 +381,36 @@
         justify-content: center;
     }
 }
+
+/* =============================================================================
+   WEBCAM CONTROLS
+   ============================================================================= */
+
+.webcam-controls {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+    gap: 0.5rem;
+}
+
+.webcam-controls button {
+    margin-bottom: 0;
+}
+
+/* =============================================================================
+   LOOP BUTTON ACTIVE STATE
+   ============================================================================= */
+
+.control-btn.loop-active {
+    background: var(--pico-primary);
+    color: white;
+}
+
+/* =============================================================================
+   WEBCAM PAUSED STATE
+   ============================================================================= */
+
+#videoFeed.paused {
+    filter: grayscale(100%);
+    opacity: 0.7;
+}

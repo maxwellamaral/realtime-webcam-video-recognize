@@ -50,6 +50,11 @@
                 <video id="videoFeed" autoplay playsinline></video>
                 <canvas id="canvas" class="hidden"></canvas>
                 
+                <!-- Controles da Webcam -->
+                <div class="webcam-controls">
+                    <button id="toggleWebcam" class="secondary">&#x23F8; Pausar Webcam</button>
+                </div>
+                
                 <!-- Opção de Gravação -->
                 <fieldset>
                     <label>
@@ -108,6 +113,7 @@
                             <button id="nextFrame" class="control-btn" title="Próximo frame">⏭️</button>
                         </div>
                         <div class="controls-right">
+                            <button id="toggleLoop" class="control-btn" title="Repetir">🔁</button>
                             <select id="playbackSpeed" class="speed-select">
                                 <option value="0.25">0.25x</option>
                                 <option value="0.5">0.5x</option>
@@ -196,6 +202,6 @@
         </article>
     </main>
 
-    <script type="py" src="camera_app.py?v=4"></script>
+    <script type="py" src="camera_app.py?v=5"></script>
 </body>
 </html>

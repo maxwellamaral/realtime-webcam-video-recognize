@@ -43,6 +43,7 @@ recording_indicator = document.getElementById('recordingIndicator')
 download_section = document.getElementById('downloadSection')
 download_video_btn = document.getElementById('downloadVideo')
 download_captions_btn = document.getElementById('downloadCaptions')
+toggle_webcam_btn = document.getElementById('toggleWebcam')
 
 # =============================================================================
 # ELEMENTOS DO DOM - VÍDEO LOCAL
@@ -65,6 +66,7 @@ playback_speed_select = document.getElementById('playbackSpeed')
 change_video_btn = document.getElementById('changeVideo')
 video_download_section = document.getElementById('videoDownloadSection')
 download_video_srt_btn = document.getElementById('downloadVideoSrt')
+toggle_loop_btn = document.getElementById('toggleLoop')
 
 # =============================================================================
 # ELEMENTOS DO DOM - IMAGEM
@@ -89,6 +91,7 @@ stream = None
 is_processing = False
 processing_task = None
 available_cameras = []
+is_webcam_paused = False  # Webcam pausada manualmente
 
 # Estado gravação webcam
 media_recorder = None
@@ -102,6 +105,7 @@ video_captions = []
 video_processing_start_time = None
 video_last_caption_time = None
 is_video_processing = False
+is_loop_enabled = False  # Repetição do vídeo
 
 # Estado imagem
 current_image_base64 = None
@@ -128,6 +132,8 @@ def switch_tab(event):
     """Alterna entre as abas."""
     global current_tab
     
+    old_tab = current_tab
+    
     # Para processamento ao trocar de aba
     if is_processing:
         handle_stop()
@@ -136,8 +142,12 @@ def switch_tab(event):
     clicked_btn = event.target
     tab_name = clicked_btn.getAttribute('data-tab')
     
-    if tab_name == current_tab:
+    if tab_name == old_tab:
         return
+    
+    # Pausa webcam ao sair da aba webcam
+    if old_tab == "webcam" and stream is not None:
+        pause_webcam()
     
     current_tab = tab_name
     
@@ -168,6 +178,10 @@ def switch_tab(event):
     else:
         start_button.textContent = "Start"
         interval_select.disabled = False
+    
+    # Retoma webcam ao voltar para aba webcam
+    if tab_name == "webcam" and stream is None:
+        asyncio.ensure_future(resume_webcam())
     
     console.log(f"Switched to tab: {tab_name}")
 
@@ -369,6 +383,43 @@ def capture_webcam_frame() -> str:
     context = canvas.getContext('2d')
     context.drawImage(video, 0, 0, canvas.width, canvas.height)
     return canvas.toDataURL('image/jpeg', 0.8)
+
+
+def pause_webcam():
+    """Pausa a webcam (para o stream)."""
+    global stream, is_webcam_paused
+    
+    if stream is not None:
+        tracks = stream.getTracks()
+        for i in range(tracks.length):
+            tracks[i].stop()
+        stream = None
+        is_webcam_paused = True
+        video.classList.add('paused')
+        toggle_webcam_btn.innerHTML = "&#x25B6; Retomar Webcam"
+        console.log("Webcam paused")
+
+
+async def resume_webcam():
+    """Retoma a webcam."""
+    global is_webcam_paused
+    
+    if len(available_cameras) > 0:
+        await switch_camera(camera_select.value or available_cameras[0]["deviceId"])
+        is_webcam_paused = False
+        video.classList.remove('paused')
+        toggle_webcam_btn.innerHTML = "&#x23F8; Pausar Webcam"
+        console.log("Webcam resumed")
+
+
+def toggle_webcam(event):
+    """Alterna entre pausar e retomar webcam."""
+    global stream
+    
+    if stream is not None:
+        pause_webcam()
+    else:
+        asyncio.ensure_future(resume_webcam())
 
 
 # =============================================================================
@@ -647,6 +698,28 @@ def change_playback_speed(event):
     """Altera velocidade de reprodução."""
     local_video.playbackRate = float(playback_speed_select.value)
     console.log(f"Playback speed: {playback_speed_select.value}x")
+
+
+def toggle_loop(event):
+    """Alterna repetição do vídeo."""
+    global is_loop_enabled
+    
+    is_loop_enabled = not is_loop_enabled
+    local_video.loop = is_loop_enabled
+    
+    if is_loop_enabled:
+        toggle_loop_btn.classList.add('loop-active')
+        console.log("Loop enabled")
+    else:
+        toggle_loop_btn.classList.remove('loop-active')
+        console.log("Loop disabled")
+
+
+def on_video_ended(event):
+    """Callback quando o vídeo termina."""
+    play_pause_btn.textContent = "▶️"
+    if not is_loop_enabled:
+        console.log("Video ended")
 
 
 def show_video_upload(event):
@@ -978,6 +1051,7 @@ start_button.addEventListener('click', create_proxy(toggle_processing))
 camera_select.addEventListener('change', create_proxy(on_camera_change))
 download_video_btn.addEventListener('click', create_proxy(download_webcam_video))
 download_captions_btn.addEventListener('click', create_proxy(download_webcam_captions))
+toggle_webcam_btn.addEventListener('click', create_proxy(toggle_webcam))
 
 # Vídeo local
 video_file_input.addEventListener('change', create_proxy(on_video_file_selected))
@@ -993,6 +1067,8 @@ forward_btn.addEventListener('click', create_proxy(forward_video))
 playback_speed_select.addEventListener('change', create_proxy(change_playback_speed))
 change_video_btn.addEventListener('click', create_proxy(show_video_upload))
 download_video_srt_btn.addEventListener('click', create_proxy(download_video_captions))
+toggle_loop_btn.addEventListener('click', create_proxy(toggle_loop))
+local_video.addEventListener('ended', create_proxy(on_video_ended))
 
 # Imagem
 image_file_input.addEventListener('change', create_proxy(on_image_file_selected))
