@@ -139,10 +139,14 @@ Se utilizar este projeto em trabalhos acadêmicos, por favor cite:
 ```bibtex
 @software{pyscript_realtime_webcam_2025,
   author       = {Maxwell Amaral},
-  title        = {PyScript Realtime Webcam Vision},
+  title        = {{PyScript Realtime Webcam Vision: Real-time Video Analysis with Vision Language Models in the Browser}},
   year         = {2025},
+  month        = dec,
   url          = {https://github.com/maxwellamaral/realtime-webcam-video-recognize},
-  note         = {AI-assisted development with Antigravity}
+  version      = {1.0.0},
+  abstract     = {A web application for real-time video analysis using Vision Language Models (VLM) directly in the browser with PyScript. Features include webcam capture, configurable processing intervals, video recording with timestamped SRT captions, and support for LM Studio and llama.cpp backends.},
+  keywords     = {pyscript, webcam, vision-language-models, real-time, browser, python, vlm, lm-studio, llama-cpp},
+  note         = {AI-assisted development with Antigravity (Google DeepMind) with human review and professional supervision. Inspired by smolvlm-realtime-webcam by ngxson.}
 }
 ```
 
