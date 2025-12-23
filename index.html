@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Interaction App (PyScript)</title>
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.11.1/core.css">
+    <link rel="stylesheet" href="styles.css">
+    <script type="module" src="https://pyscript.net/releases/2024.11.1/core.js"></script>
+</head>
+<body>
+
+    <div id="loadingOverlay" class="loading-overlay">
+        <div>🐍 Carregando PyScript...</div>
+    </div>
+
+    <h1>Camera Interaction App <span class="pyscript-badge">PyScript</span></h1>
+
+    <video id="videoFeed" autoplay playsinline></video>
+    <canvas id="canvas" class="hidden"></canvas>
+
+    <div class="io-areas">
+        <div>
+            <label for="apiProvider">Provedor da API:</label><br>
+            <select id="apiProvider" name="API Provider">
+                <option value="llamacpp">llama.cpp</option>
+                <option value="lmstudio" selected>LM Studio</option>
+            </select>
+        </div>
+        <div>
+            <label for="baseURL">Base API:</label><br>
+            <input type="text" id="baseURL" name="Base URL" value="http://localhost:1234">
+        </div>
+        <div>
+            <label for="instructionText">Instruction:</label><br>
+            <textarea id="instructionText" style="height: 2em; width: 40em" name="Instruction">What do you see?</textarea>
+        </div>
+        <div>
+            <label for="responseText">Response:</label><br>
+            <textarea id="responseText" style="height: 2em; width: 40em" name="Response" readonly placeholder="Server response will appear here..."></textarea>
+        </div>
+    </div>
+
+    <div class="controls">
+        <label for="intervalSelect">Interval between 2 requests:</label>
+        <select id="intervalSelect" name="Interval between 2 requests">
+            <option value="100">100ms</option>
+            <option value="250">250ms</option>
+            <option value="500" selected>500ms</option>
+            <option value="1000">1s</option>
+            <option value="2000">2s</option>
+        </select>
+        <button id="startButton" class="start">Start</button>
+    </div>
+
+    <script type="py" src="camera_app.py"></script>
+</body>
+</html>
