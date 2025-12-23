@@ -41,7 +41,7 @@ Este projeto foi inspirado no trabalho de **[smolvlm-realtime-webcam](https://gi
 
 ```bash
 # Clone o repositório
-git clone <repo-url>
+git clone https://github.com/maxwellamaral/realtime-webcam-video-recognize.git
 cd realtime-webcam/src/
 
 # Inicie um servidor HTTP local
@@ -58,6 +58,59 @@ python -m http.server 8000
 3. Digite uma instrução (ex: "What do you see?")
 4. Opcionalmente, ative "Gravar vídeo com legendas"
 5. Clique em **Start**
+
+### 🖥️ Configurando o LM Studio
+
+O LM Studio é uma aplicação desktop que permite executar modelos de linguagem localmente. Siga os passos abaixo para configurá-lo:
+
+#### 1. Instalação
+
+1. Baixe o LM Studio em [lmstudio.ai](https://lmstudio.ai/)
+2. Instale e abra a aplicação
+
+#### 2. Baixando Modelos VLM
+
+Na aba **Discover**, pesquise e baixe um dos modelos de visão recomendados:
+
+| Modelo                       | Tamanho | Descrição                              |
+| ---------------------------- | ------- | -------------------------------------- |
+| `SmolVLM-500M-Instruct-GGUF` | ~500MB  | Modelo leve, ideal para testes rápidos |
+| `qwen2-vl-7b-instruct-GGUF`  | ~4-8GB  | Maior qualidade, requer mais recursos, funciona em português |
+
+> 💡 **Dica**: Para o SmolVLM, pesquise por "SmolVLM" e selecione a versão GGUF quantizada (ex: Q4_K_M).
+
+#### 3. Iniciando o Servidor
+
+1. Vá para a aba **Local Server** (ícone de servidor no menu lateral)
+2. Selecione o modelo VLM carregado
+3. Configure as opções:
+   - **Port**: 1234 (padrão)
+   - **CORS**: Ativado ✅ (importante para requisições do navegador)
+4. Clique em **Start Server**
+
+#### 4. Verificando a API
+
+O servidor deve estar rodando em `http://localhost:1234`. Você pode testar com:
+
+```bash
+curl http://localhost:1234/v1/models
+```
+
+#### 5. Configuração na Aplicação
+
+Na aplicação web:
+
+- **Provedor**: LM Studio
+- **Base API**: `http://localhost:1234`
+
+### ⚠️ Solução de Problemas
+
+| Problema                   | Solução                                               |
+| -------------------------- | ----------------------------------------------------- |
+| CORS Error                 | Ative CORS nas configurações do servidor LM Studio    |
+| Connection Refused         | Verifique se o servidor está rodando na porta correta |
+| Modelo não suporta imagens | Use um modelo VLM (Vision Language Model)             |
+| Resposta lenta             | Reduza o intervalo ou use um modelo menor             |
 
 ## 📁 Estrutura do Projeto
 
