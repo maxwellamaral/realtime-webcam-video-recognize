@@ -1,22 +1,37 @@
 /* Custom styles to complement Pico CSS */
 
-/* Video feed styling */
-#videoFeed {
+/* =============================================================================
+   VIDEO FEED STYLING
+   ============================================================================= */
+
+#videoFeed, .local-video, .loaded-image {
     width: 100%;
     max-width: 640px;
-    aspect-ratio: 4/3;
+    aspect-ratio: 16/9;
     border-radius: var(--pico-border-radius);
     background-color: #000;
     display: block;
     margin: 0 auto;
+    object-fit: contain;
 }
 
-/* Hidden elements */
+.loaded-image {
+    aspect-ratio: auto;
+    max-height: 400px;
+}
+
+/* =============================================================================
+   HIDDEN ELEMENTS
+   ============================================================================= */
+
 .hidden {
-    display: none;
+    display: none !important;
 }
 
-/* PyScript badge */
+/* =============================================================================
+   PYSCRIPT BADGE
+   ============================================================================= */
+
 .pyscript-badge {
     background: linear-gradient(135deg, #306998, #FFD43B);
     color: white;
@@ -28,7 +43,10 @@
     margin-left: 0.5rem;
 }
 
-/* Recording indicator */
+/* =============================================================================
+   RECORDING INDICATOR
+   ============================================================================= */
+
 .recording-indicator {
     color: #dc3545;
     font-size: 0.875rem;
@@ -43,7 +61,183 @@
     50% { opacity: 0.3; }
 }
 
-/* Start/Stop button colors */
+/* =============================================================================
+   TAB SYSTEM
+   ============================================================================= */
+
+.tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 0;
+    border-bottom: 2px solid var(--pico-muted-border-color);
+    background: transparent;
+    padding: 0;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--pico-muted-color);
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    margin-bottom: -2px;
+}
+
+.tab-btn:hover {
+    background: var(--pico-card-background-color);
+    color: var(--pico-color);
+}
+
+.tab-btn.active {
+    color: var(--pico-primary);
+    border-bottom-color: var(--pico-primary);
+    background: var(--pico-card-background-color);
+}
+
+.tab-content {
+    margin-top: 0;
+}
+
+.tab-panel {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* =============================================================================
+   FILE UPLOAD AREA
+   ============================================================================= */
+
+.file-upload-area {
+    border: 2px dashed var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    padding: 3rem 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.file-upload-area:hover,
+.file-upload-area.dragover {
+    border-color: var(--pico-primary);
+    background: var(--pico-card-background-color);
+}
+
+.upload-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.upload-icon {
+    font-size: 3rem;
+}
+
+.upload-hint {
+    color: var(--pico-muted-color);
+    font-size: 0.875rem;
+}
+
+/* =============================================================================
+   VIDEO PLAYER CONTROLS
+   ============================================================================= */
+
+.video-timeline {
+    margin: 1rem 0;
+}
+
+.video-timeline input[type="range"] {
+    width: 100%;
+    margin-bottom: 0.5rem;
+}
+
+.time-display {
+    display: flex;
+    justify-content: center;
+    gap: 0.25rem;
+    color: var(--pico-muted-color);
+    font-family: monospace;
+    font-size: 0.875rem;
+}
+
+.player-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.controls-left,
+.controls-right {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.control-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 1.25rem;
+    min-width: 3rem;
+    border-radius: var(--pico-border-radius);
+    background: var(--pico-secondary-background);
+    border: 1px solid var(--pico-muted-border-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.control-btn:hover {
+    background: var(--pico-primary);
+    color: white;
+}
+
+.control-btn.primary {
+    background: var(--pico-primary);
+    color: white;
+    padding: 0.75rem 1.25rem;
+}
+
+.control-btn.secondary {
+    font-size: 1rem;
+}
+
+.speed-select {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+    min-width: 4rem;
+    margin-bottom: 0;
+}
+
+/* =============================================================================
+   IMAGE CONTROLS
+   ============================================================================= */
+
+.image-controls {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+.image-controls button {
+    margin-bottom: 0;
+}
+
+/* =============================================================================
+   START/STOP BUTTON COLORS
+   ============================================================================= */
+
 #startButton.start {
     background-color: var(--pico-primary);
 }
@@ -53,7 +247,10 @@
     border-color: #dc3545;
 }
 
-/* Button container alignment */
+/* =============================================================================
+   BUTTON CONTAINER
+   ============================================================================= */
+
 .button-container {
     display: flex;
     align-items: flex-end;
@@ -64,7 +261,10 @@
     margin-bottom: 0;
 }
 
-/* Download section */
+/* =============================================================================
+   DOWNLOAD SECTION
+   ============================================================================= */
+
 .download-section {
     margin-top: 1rem;
     padding: 1rem;
@@ -82,7 +282,20 @@
     margin-bottom: 0;
 }
 
-/* Loading overlay */
+/* =============================================================================
+   COMMON CONTROLS
+   ============================================================================= */
+
+.common-controls {
+    border-top: 2px solid var(--pico-muted-border-color);
+    margin-top: 1rem;
+    padding-top: 1rem;
+}
+
+/* =============================================================================
+   LOADING OVERLAY
+   ============================================================================= */
+
 .loading-overlay {
     position: fixed;
     top: 0;
@@ -102,13 +315,69 @@
     display: none;
 }
 
-/* Response textarea styling */
+/* =============================================================================
+   RESPONSE TEXTAREA
+   ============================================================================= */
+
 #responseText {
     background-color: var(--pico-form-element-disabled-background-color);
 }
 
-/* Recording enabled - video border effect */
-#videoFeed.recording {
+/* =============================================================================
+   RECORDING VIDEO BORDER
+   ============================================================================= */
+
+#videoFeed.recording,
+.local-video.recording {
     border: 3px solid #dc3545;
     box-shadow: 0 0 20px rgba(220, 53, 69, 0.4);
+}
+
+/* =============================================================================
+   PROCESSING INDICATOR
+   ============================================================================= */
+
+.processing-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: var(--pico-primary);
+    color: white;
+    border-radius: var(--pico-border-radius);
+    margin-top: 0.5rem;
+}
+
+.processing-indicator .spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* =============================================================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================================================= */
+
+@media (max-width: 768px) {
+    .tabs {
+        flex-wrap: wrap;
+    }
+    
+    .tab-btn {
+        flex: 1 1 100%;
+    }
+    
+    .player-controls {
+        flex-direction: column;
+    }
+    
+    .controls-left,
+    .controls-right {
+        width: 100%;
+        justify-content: center;
+    }
 }

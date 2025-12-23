@@ -1,78 +1,110 @@
 """
-Camera Interaction App - PyScript Version
-==========================================
-Aplicação de interação com câmera usando Python no navegador.
-Com suporte a gravação de vídeo e legendas timestampadas.
+Vision AI - PyScript Application
+=================================
+Aplicação de análise de vídeo e imagem usando modelos de visão computacional.
+Suporta webcam em tempo real, vídeos locais e imagens estáticas.
 
 Este módulo utiliza PyScript para executar Python diretamente no navegador,
-fazendo ponte com APIs JavaScript como MediaRecorder e fetch.
+fazendo ponte com APIs JavaScript como MediaRecorder, File API e fetch.
 
 Funcionalidades:
-- Captura de vídeo da webcam
-- Envio de frames para API de visão computacional (LM Studio / llama.cpp)
-- Gravação opcional do vídeo com legendas em formato SRT
+- Captura de vídeo da webcam com gravação e legendas
+- Processamento de vídeos locais com player completo
+- Análise de imagens estáticas
 """
 
 # =============================================================================
 # IMPORTS
 # =============================================================================
-# Módulos JavaScript acessíveis via PyScript
-from js import document, navigator, console, JSON, Object, window, fetch, Blob, URL, Array
-# Utilitários para interoperabilidade Python <-> JavaScript
+from js import document, navigator, console, JSON, Object, window, fetch, Blob, URL, Array, FileReader
 from pyodide.ffi import create_proxy, to_js
-# Suporte a operações assíncronas
 import asyncio
-# Parsing de respostas JSON da API
 import json
 
 # =============================================================================
-# ELEMENTOS DO DOM
+# ELEMENTOS DO DOM - COMUM
 # =============================================================================
-# Referências aos elementos HTML que serão manipulados pelo Python
-
-# Elementos de vídeo
-video = document.getElementById('videoFeed')          # Elemento <video> que exibe a webcam
-canvas = document.getElementById('canvas')            # Canvas oculto para capturar frames
-
-# Elementos de configuração da API
-api_provider = document.getElementById('apiProvider')         # Select do provedor (LM Studio / llama.cpp)
-base_url = document.getElementById('baseURL')                 # Input da URL base da API
-instruction_text = document.getElementById('instructionText') # Textarea com instrução para o modelo
-response_text = document.getElementById('responseText')       # Textarea para exibir respostas
-
-# Elementos de controle
-interval_select = document.getElementById('intervalSelect')   # Select do intervalo entre requisições
-start_button = document.getElementById('startButton')         # Botão Start/Stop
-loading_overlay = document.getElementById('loadingOverlay')   # Overlay de carregamento do PyScript
-
-# Elementos de gravação
-enable_recording = document.getElementById('enableRecording')     # Checkbox para ativar gravação
-recording_indicator = document.getElementById('recordingIndicator') # Indicador "● REC"
-download_section = document.getElementById('downloadSection')     # Seção com botões de download
-download_video_btn = document.getElementById('downloadVideo')     # Botão download vídeo
-download_captions_btn = document.getElementById('downloadCaptions') # Botão download legendas
-
-# Elemento de seleção de câmera
-camera_select = document.getElementById('cameraSelect')          # Select para escolher câmera
+api_provider = document.getElementById('apiProvider')
+base_url = document.getElementById('baseURL')
+instruction_text = document.getElementById('instructionText')
+response_text = document.getElementById('responseText')
+interval_select = document.getElementById('intervalSelect')
+start_button = document.getElementById('startButton')
+loading_overlay = document.getElementById('loadingOverlay')
 
 # =============================================================================
-# ESTADO GLOBAL DA APLICAÇÃO
+# ELEMENTOS DO DOM - WEBCAM
+# =============================================================================
+video = document.getElementById('videoFeed')
+canvas = document.getElementById('canvas')
+camera_select = document.getElementById('cameraSelect')
+enable_recording = document.getElementById('enableRecording')
+recording_indicator = document.getElementById('recordingIndicator')
+download_section = document.getElementById('downloadSection')
+download_video_btn = document.getElementById('downloadVideo')
+download_captions_btn = document.getElementById('downloadCaptions')
+
+# =============================================================================
+# ELEMENTOS DO DOM - VÍDEO LOCAL
+# =============================================================================
+video_file_input = document.getElementById('videoFileInput')
+video_drop_zone = document.getElementById('videoDropZone')
+video_player_container = document.getElementById('videoPlayerContainer')
+local_video = document.getElementById('localVideo')
+local_video_canvas = document.getElementById('localVideoCanvas')
+video_timeline = document.getElementById('videoTimeline')
+current_time_display = document.getElementById('currentTime')
+total_time_display = document.getElementById('totalTime')
+play_pause_btn = document.getElementById('playPause')
+stop_video_btn = document.getElementById('stopVideo')
+prev_frame_btn = document.getElementById('prevFrame')
+next_frame_btn = document.getElementById('nextFrame')
+rewind_btn = document.getElementById('rewind')
+forward_btn = document.getElementById('forward')
+playback_speed_select = document.getElementById('playbackSpeed')
+change_video_btn = document.getElementById('changeVideo')
+video_download_section = document.getElementById('videoDownloadSection')
+download_video_srt_btn = document.getElementById('downloadVideoSrt')
+
+# =============================================================================
+# ELEMENTOS DO DOM - IMAGEM
+# =============================================================================
+image_file_input = document.getElementById('imageFileInput')
+image_drop_zone = document.getElementById('imageDropZone')
+image_viewer_container = document.getElementById('imageViewerContainer')
+loaded_image = document.getElementById('loadedImage')
+image_canvas = document.getElementById('imageCanvas')
+analyze_image_btn = document.getElementById('analyzeImage')
+change_image_btn = document.getElementById('changeImage')
+
+# =============================================================================
+# ESTADO GLOBAL
 # =============================================================================
 
-# Estado do stream de vídeo
-stream = None           # MediaStream da webcam (None se câmera não ativa)
-is_processing = False   # Flag indicando se o loop de processamento está ativo
-processing_task = None  # Referência à Task do asyncio para o loop
+# Estado da aba atual
+current_tab = "webcam"
 
-# Estado da gravação
-media_recorder = None       # Instância do MediaRecorder para gravar vídeo
-recorded_chunks = []        # Lista de Blobs com chunks do vídeo gravado
-captions = []               # Lista de legendas: [{start, end, text}, ...]
-recording_start_time = None # Timestamp (segundos) do início da gravação
-last_caption_time = None    # Timestamp da última legenda (para calcular duração)
+# Estado webcam
+stream = None
+is_processing = False
+processing_task = None
+available_cameras = []
 
-# Lista de câmeras disponíveis
-available_cameras = []      # Lista de dispositivos de vídeo {deviceId, label}
+# Estado gravação webcam
+media_recorder = None
+recorded_chunks = []
+webcam_captions = []
+recording_start_time = None
+last_caption_time = None
+
+# Estado vídeo local
+video_captions = []
+video_processing_start_time = None
+video_last_caption_time = None
+is_video_processing = False
+
+# Estado imagem
+current_image_base64 = None
 
 
 # =============================================================================
@@ -80,13 +112,7 @@ available_cameras = []      # Lista de dispositivos de vídeo {deviceId, label}
 # =============================================================================
 
 def update_base_url(event):
-    """
-    Atualiza a URL base automaticamente quando o provedor de API muda.
-    
-    Cada provedor usa uma porta padrão diferente:
-    - llama.cpp: porta 8080
-    - LM Studio: porta 1234
-    """
+    """Atualiza a URL base quando o provedor muda."""
     provider = api_provider.value
     if provider == 'llamacpp':
         base_url.value = 'http://localhost:8080'
@@ -95,42 +121,79 @@ def update_base_url(event):
 
 
 # =============================================================================
-# FUNÇÕES DE COMUNICAÇÃO COM A API
+# SISTEMA DE ABAS
+# =============================================================================
+
+def switch_tab(event):
+    """Alterna entre as abas."""
+    global current_tab
+    
+    # Para processamento ao trocar de aba
+    if is_processing:
+        handle_stop()
+    
+    # Obtém a aba clicada
+    clicked_btn = event.target
+    tab_name = clicked_btn.getAttribute('data-tab')
+    
+    if tab_name == current_tab:
+        return
+    
+    current_tab = tab_name
+    
+    # Atualiza botões
+    tab_buttons = document.querySelectorAll('.tab-btn')
+    for i in range(tab_buttons.length):
+        btn = tab_buttons[i]
+        if btn.getAttribute('data-tab') == tab_name:
+            btn.classList.add('active')
+        else:
+            btn.classList.remove('active')
+    
+    # Atualiza painéis
+    panels = document.querySelectorAll('.tab-panel')
+    for i in range(panels.length):
+        panel = panels[i]
+        if panel.id == f"tab-{tab_name}":
+            panel.classList.remove('hidden')
+            panel.classList.add('active')
+        else:
+            panel.classList.add('hidden')
+            panel.classList.remove('active')
+    
+    # Atualiza texto do botão Start conforme a aba
+    if tab_name == "image":
+        start_button.textContent = "Analisar"
+        interval_select.disabled = True
+    else:
+        start_button.textContent = "Start"
+        interval_select.disabled = False
+    
+    console.log(f"Switched to tab: {tab_name}")
+
+
+# =============================================================================
+# FUNÇÕES DE API
 # =============================================================================
 
 async def send_chat_completion_request(instruction: str, image_base64_url: str) -> str:
-    """
-    Envia uma requisição para a API de chat completion com imagem.
-    
-    Args:
-        instruction: Texto de instrução para o modelo (ex: "What do you see?")
-        image_base64_url: Imagem codificada em base64 como data URL
-        
-    Returns:
-        String com a resposta do modelo ou mensagem de erro
-        
-    A requisição segue o formato OpenAI Chat Completions API com suporte a visão.
-    """
+    """Envia requisição para a API de chat completion com imagem."""
     try:
         url = f"{base_url.value}/v1/chat/completions"
         
-        # Payload no formato OpenAI Chat Completions com conteúdo multimodal
         payload = {
-            "max_tokens": 100,  # Limita tamanho da resposta para respostas rápidas
+            "max_tokens": 100,
             "messages": [
                 {
                     "role": "user",
                     "content": [
-                        # Texto da instrução
                         {"type": "text", "text": instruction},
-                        # Imagem em base64
                         {"type": "image_url", "image_url": {"url": image_base64_url}}
                     ]
                 }
             ]
         }
         
-        # Converte objetos Python para JavaScript (necessário para fetch)
         js_payload = to_js(payload, dict_converter=Object.fromEntries)
         headers = to_js({"Content-Type": "application/json"}, dict_converter=Object.fromEntries)
         
@@ -140,36 +203,27 @@ async def send_chat_completion_request(instruction: str, image_base64_url: str) 
             "body": JSON.stringify(js_payload)
         }, dict_converter=Object.fromEntries)
         
-        # Faz a requisição HTTP
         response = await fetch(url, options)
         
-        # Tratamento de erros HTTP
         if not response.ok:
             status = response.status
             error_msg = f"Server error: {status}"
-            
-            # Mensagens de erro amigáveis para problemas comuns
             if status == 404:
-                error_msg += " - Endpoint not found. Make sure the server is running."
+                error_msg += " - Endpoint not found."
             elif status == 500:
-                error_msg += " - Server error. Check if the model supports vision."
+                error_msg += " - Server error."
             elif status in [400, 422]:
                 error_msg += " - Invalid request format."
-            
             return error_msg
         
-        # Parse da resposta JSON
         data_text = await response.text()
         data = json.loads(data_text)
         
-        # Validação da estrutura da resposta
         if 'choices' not in data or len(data['choices']) == 0:
-            return "Error: Invalid response format from server"
-        
+            return "Error: Invalid response format"
         if 'message' not in data['choices'][0]:
-            return "Error: Invalid response format from server"
+            return "Error: Invalid response format"
         
-        # Retorna o conteúdo da resposta
         return data['choices'][0]['message']['content']
         
     except Exception as e:
@@ -178,54 +232,38 @@ async def send_chat_completion_request(instruction: str, image_base64_url: str) 
 
 
 # =============================================================================
-# FUNÇÕES DE CÂMERA
+# FUNÇÕES DE CÂMERA (WEBCAM)
 # =============================================================================
 
 async def enumerate_cameras():
-    """
-    Enumera todas as câmeras disponíveis no dispositivo.
-    
-    Usa a API MediaDevices.enumerateDevices() para listar
-    todos os dispositivos de vídeo e popula o dropdown de seleção.
-    """
+    """Enumera todas as câmeras disponíveis."""
     global available_cameras
     
     console.log("Starting camera enumeration...")
     
     try:
-        # Limpa o dropdown primeiro (remove todas as opções)
         while camera_select.options.length > 0:
             camera_select.remove(0)
         
-        # Primeiro, solicita permissão de câmera para obter labels
-        # (sem permissão, os labels vêm vazios)
         console.log("Requesting camera permission...")
         temp_constraints = to_js({"video": True, "audio": False}, dict_converter=Object.fromEntries)
         temp_stream = await navigator.mediaDevices.getUserMedia(temp_constraints)
         
         console.log("Permission granted, stopping temp stream...")
-        
-        # Para o stream temporário
         tracks = temp_stream.getTracks()
         for i in range(tracks.length):
             tracks[i].stop()
         
-        # Agora enumera os dispositivos (com labels)
         console.log("Enumerating devices...")
         devices = await navigator.mediaDevices.enumerateDevices()
-        
         console.log(f"Total devices found: {devices.length}")
         
-        # Filtra apenas dispositivos de vídeo (câmeras)
         available_cameras = []
         
         for i in range(devices.length):
             device = devices[i]
-            console.log(f"Device {i}: kind={device.kind}, label={device.label}")
-            
             if device.kind == "videoinput":
                 device_id = device.deviceId
-                # Usa label ou nome genérico se não disponível
                 label = device.label if device.label else f"Câmera {len(available_cameras) + 1}"
                 
                 available_cameras.append({
@@ -233,7 +271,6 @@ async def enumerate_cameras():
                     "label": label
                 })
                 
-                # Adiciona opção ao dropdown
                 option = document.createElement("option")
                 option.value = device_id
                 option.textContent = label
@@ -250,7 +287,6 @@ async def enumerate_cameras():
             
     except Exception as e:
         console.error(f"Error enumerating cameras: {str(e)}")
-        # Limpa o dropdown em caso de erro
         while camera_select.options.length > 0:
             camera_select.remove(0)
         option = document.createElement("option")
@@ -260,24 +296,15 @@ async def enumerate_cameras():
 
 
 async def switch_camera(device_id: str = None):
-    """
-    Troca para uma câmera específica.
-    
-    Args:
-        device_id: ID do dispositivo de câmera (ou None para usar padrão)
-        
-    Para o stream atual e inicia um novo com a câmera selecionada.
-    """
+    """Troca para uma câmera específica."""
     global stream
     
     try:
-        # Para o stream atual se existir
         if stream:
             tracks = stream.getTracks()
             for i in range(tracks.length):
                 tracks[i].stop()
         
-        # Configura constraints com deviceId específico se fornecido
         if device_id:
             video_constraints = to_js({
                 "deviceId": {"exact": device_id}
@@ -290,10 +317,7 @@ async def switch_camera(device_id: str = None):
             "audio": False
         }, dict_converter=Object.fromEntries)
         
-        # Solicita acesso à câmera selecionada
         stream = await navigator.mediaDevices.getUserMedia(constraints)
-        
-        # Conecta o stream ao elemento de vídeo
         video.srcObject = stream
         
         response_text.value = "Câmera alterada com sucesso."
@@ -306,29 +330,19 @@ async def switch_camera(device_id: str = None):
 
 
 def on_camera_change(event):
-    """
-    Callback quando o usuário seleciona outra câmera no dropdown.
-    """
+    """Callback quando o usuário seleciona outra câmera."""
     device_id = camera_select.value
     if device_id:
         asyncio.ensure_future(switch_camera(device_id))
 
 
 async def init_camera():
-    """
-    Inicializa o acesso à webcam do usuário.
-    
-    Enumera câmeras disponíveis, popula o dropdown de seleção,
-    e conecta a primeira câmera ao elemento <video>.
-    Requer HTTPS ou localhost por questões de segurança do navegador.
-    """
+    """Inicializa a webcam."""
     global stream
     
     try:
-        # Enumera câmeras disponíveis primeiro
         await enumerate_cameras()
         
-        # Se houver câmeras, conecta a primeira
         if len(available_cameras) > 0:
             first_camera_id = available_cameras[0]["deviceId"]
             await switch_camera(first_camera_id)
@@ -342,35 +356,18 @@ async def init_camera():
         error_msg = f"Error accessing camera: {str(e)}"
         console.error(error_msg)
         response_text.value = error_msg
-        window.alert("Error accessing camera. Make sure you've granted permission.")
 
 
-def capture_image() -> str:
-    """
-    Captura o frame atual do vídeo como imagem base64.
-    
-    Returns:
-        String com data URL da imagem (formato: data:image/jpeg;base64,...)
-        ou None se o stream não estiver pronto
-        
-    Usa um canvas oculto para desenhar o frame e extrair como JPEG.
-    """
+def capture_webcam_frame() -> str:
+    """Captura frame da webcam como base64."""
     global stream
-    
-    # Verifica se o stream está ativo e tem dimensões válidas
     if stream is None or video.videoWidth == 0:
-        console.warn("Video stream not ready for capture.")
         return None
     
-    # Configura o canvas com as dimensões do vídeo
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
-    
-    # Desenha o frame atual do vídeo no canvas
     context = canvas.getContext('2d')
     context.drawImage(video, 0, 0, canvas.width, canvas.height)
-    
-    # Converte para JPEG base64 (qualidade 0.8 para balancear tamanho/qualidade)
     return canvas.toDataURL('image/jpeg', 0.8)
 
 
@@ -379,17 +376,7 @@ def capture_image() -> str:
 # =============================================================================
 
 def format_time_srt(seconds: float) -> str:
-    """
-    Formata tempo em segundos para o formato SRT.
-    
-    Args:
-        seconds: Tempo em segundos (ex: 65.5)
-        
-    Returns:
-        String no formato HH:MM:SS,mmm (ex: "00:01:05,500")
-        
-    Nota: SRT usa VÍRGULA para milissegundos (diferente de VTT que usa ponto)
-    """
+    """Formata tempo para formato SRT (HH:MM:SS,mmm)."""
     hours = int(seconds // 3600)
     minutes = int((seconds % 3600) // 60)
     secs = int(seconds % 60)
@@ -397,283 +384,436 @@ def format_time_srt(seconds: float) -> str:
     return f"{hours:02d}:{minutes:02d}:{secs:02d},{millis:03d}"
 
 
-def add_caption(text: str):
-    """
-    Adiciona uma nova legenda com timestamps calculados.
+def format_time_display(seconds: float) -> str:
+    """Formata tempo para exibição (MM:SS)."""
+    minutes = int(seconds // 60)
+    secs = int(seconds % 60)
+    return f"{minutes:02d}:{secs:02d}"
+
+
+def add_webcam_caption(text: str):
+    """Adiciona legenda da webcam."""
+    global webcam_captions, recording_start_time, last_caption_time
     
-    Args:
-        text: Texto da legenda (resposta da API)
-        
-    O timestamp de início é o fim da legenda anterior (ou tempo atual se primeira).
-    O timestamp de fim é o tempo atual.
-    Legendas com erro são ignoradas.
-    """
-    global captions, recording_start_time, last_caption_time
-    
-    # Ignora se não estiver gravando
     if recording_start_time is None:
         return
     
-    # Calcula tempo decorrido desde o início da gravação
-    current_time = window.performance.now() / 1000  # Converte ms para segundos
+    current_time = window.performance.now() / 1000
     elapsed = current_time - recording_start_time
     
-    # Define timestamps da legenda
     start_time = last_caption_time if last_caption_time else elapsed
     end_time = elapsed
     
-    # Adiciona apenas se tiver duração válida e não for erro
     if end_time > start_time and text and not text.startswith("Error"):
-        captions.append({
+        webcam_captions.append({
             "start": start_time,
             "end": end_time,
             "text": text.strip()
         })
     
-    # Atualiza o tempo da última legenda
     last_caption_time = elapsed
 
 
-def generate_srt_content() -> str:
-    """
-    Gera o conteúdo completo do arquivo SRT.
+def add_video_caption(text: str):
+    """Adiciona legenda do vídeo local."""
+    global video_captions, video_last_caption_time
     
-    Returns:
-        String formatada no padrão SRT pronta para salvar em arquivo
-        
-    Formato SRT:
-        1
-        00:00:00,500 --> 00:00:02,500
-        Texto da primeira legenda
-        
-        2
-        00:00:02,500 --> 00:00:04,500
-        Texto da segunda legenda
-    """
+    current_time = local_video.currentTime
+    
+    start_time = video_last_caption_time if video_last_caption_time else current_time
+    end_time = current_time
+    
+    if end_time > start_time and text and not text.startswith("Error"):
+        video_captions.append({
+            "start": start_time,
+            "end": end_time,
+            "text": text.strip()
+        })
+    
+    video_last_caption_time = current_time
+
+
+def generate_srt_content(captions_list) -> str:
+    """Gera conteúdo SRT a partir de lista de legendas."""
     srt_lines = []
     
-    for i, caption in enumerate(captions, 1):
+    for i, caption in enumerate(captions_list, 1):
         start = format_time_srt(caption["start"])
         end = format_time_srt(caption["end"])
         text = caption["text"]
         
-        # Número sequencial da legenda
         srt_lines.append(f"{i}")
-        # Timestamps de início e fim
         srt_lines.append(f"{start} --> {end}")
-        # Texto da legenda
         srt_lines.append(text)
-        # Linha em branco separadora
         srt_lines.append("")
     
     return "\n".join(srt_lines)
 
 
 # =============================================================================
-# FUNÇÕES DE GRAVAÇÃO DE VÍDEO
+# FUNÇÕES DE GRAVAÇÃO (WEBCAM)
 # =============================================================================
 
 def on_data_available(event):
-    """
-    Callback chamado quando novos dados de vídeo estão disponíveis.
-    
-    O MediaRecorder chama esta função periodicamente (a cada 1 segundo)
-    com chunks de dados do vídeo sendo gravado.
-    """
+    """Callback quando dados de gravação estão disponíveis."""
     global recorded_chunks
     if event.data and event.data.size > 0:
         recorded_chunks.append(event.data)
 
 
-def start_recording():
-    """
-    Inicia a gravação de vídeo usando a API MediaRecorder.
-    
-    Configura o MediaRecorder para gravar o stream da webcam
-    no formato WebM com codec VP9 (ou fallback para WebM padrão).
-    """
-    global media_recorder, recorded_chunks, captions, recording_start_time, last_caption_time
+def start_webcam_recording():
+    """Inicia gravação da webcam."""
+    global media_recorder, recorded_chunks, webcam_captions, recording_start_time, last_caption_time
     
     if stream is None:
         return
     
-    # Reseta estado da gravação anterior
     recorded_chunks = []
-    captions = []
+    webcam_captions = []
     last_caption_time = None
     
-    # Tenta criar MediaRecorder com VP9 (melhor qualidade)
     options = to_js({"mimeType": "video/webm;codecs=vp9"}, dict_converter=Object.fromEntries)
     
     try:
         media_recorder = window.MediaRecorder.new(stream, options)
     except:
-        # Fallback para codec padrão se VP9 não suportado
         options = to_js({"mimeType": "video/webm"}, dict_converter=Object.fromEntries)
         media_recorder = window.MediaRecorder.new(stream, options)
     
-    # Configura callback para receber dados
     media_recorder.ondataavailable = create_proxy(on_data_available)
-    
-    # Inicia gravação, coletando dados a cada 1000ms
     media_recorder.start(1000)
     
-    # Marca o timestamp de início para cálculo das legendas
     recording_start_time = window.performance.now() / 1000
     
-    # Atualiza UI para indicar gravação
-    recording_indicator.classList.remove('hidden')  # Mostra "● REC"
-    video.classList.add('recording')                 # Adiciona borda vermelha
-    download_section.classList.add('hidden')         # Esconde downloads anteriores
+    recording_indicator.classList.remove('hidden')
+    video.classList.add('recording')
+    download_section.classList.add('hidden')
     
-    console.log("Recording started")
+    console.log("Webcam recording started")
 
 
-def stop_recording():
-    """
-    Para a gravação de vídeo e prepara os downloads.
-    
-    Finaliza o MediaRecorder e após um breve delay
-    exibe os botões de download para o usuário.
-    """
+def stop_webcam_recording():
+    """Para gravação da webcam."""
     global media_recorder, recording_start_time
     
-    # Para o MediaRecorder se estiver ativo
     if media_recorder and media_recorder.state != "inactive":
         media_recorder.stop()
     
     recording_start_time = None
     
-    # Atualiza UI
-    recording_indicator.classList.add('hidden')   # Esconde "● REC"
-    video.classList.remove('recording')           # Remove borda vermelha
+    recording_indicator.classList.add('hidden')
+    video.classList.remove('recording')
     
-    # Mostra seção de downloads após delay (garante dados prontos)
     window.setTimeout(create_proxy(lambda: download_section.classList.remove('hidden')), 500)
     
-    console.log("Recording stopped")
+    console.log("Webcam recording stopped")
 
 
-# =============================================================================
-# FUNÇÕES DE DOWNLOAD
-# =============================================================================
-
-def download_video(event):
-    """
-    Faz download do vídeo gravado como arquivo .webm
-    
-    Combina todos os chunks gravados em um único Blob
-    e dispara o download usando um link temporário.
-    """
+def download_webcam_video(event):
+    """Download do vídeo da webcam."""
     global recorded_chunks
     
     if len(recorded_chunks) == 0:
         window.alert("Nenhum vídeo gravado!")
         return
     
-    # Combina todos os chunks em um único Blob
     js_chunks = to_js(recorded_chunks)
     blob = Blob.new(js_chunks, to_js({"type": "video/webm"}, dict_converter=Object.fromEntries))
     
-    # Cria URL temporária para o Blob
     url = URL.createObjectURL(blob)
-    
-    # Cria e clica em um link para disparar o download
     a = document.createElement('a')
     a.href = url
-    a.download = "recording.webm"
+    a.download = "webcam_recording.webm"
     document.body.appendChild(a)
     a.click()
-    
-    # Limpa o link e a URL temporária
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    
-    console.log("Video downloaded")
 
 
-def download_captions_file(event):
-    """
-    Faz download das legendas em formato SRT.
+def download_webcam_captions(event):
+    """Download das legendas da webcam."""
+    global webcam_captions
     
-    Gera o conteúdo SRT a partir das legendas capturadas
-    e dispara o download como arquivo de texto.
-    """
-    global captions
-    
-    if len(captions) == 0:
+    if len(webcam_captions) == 0:
         window.alert("Nenhuma legenda gerada!")
         return
     
-    # Gera conteúdo do arquivo SRT
-    srt_content = generate_srt_content()
+    srt_content = generate_srt_content(webcam_captions)
     
-    # Cria Blob com o conteúdo texto
     blob = Blob.new(
         to_js([srt_content]),
         to_js({"type": "text/plain"}, dict_converter=Object.fromEntries)
     )
     
-    # Dispara download
     url = URL.createObjectURL(blob)
     a = document.createElement('a')
     a.href = url
-    a.download = "captions.srt"
+    a.download = "webcam_captions.srt"
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    
-    console.log("Captions downloaded")
 
 
 # =============================================================================
-# LOOP PRINCIPAL DE PROCESSAMENTO
+# FUNÇÕES DE VÍDEO LOCAL
+# =============================================================================
+
+def on_video_file_selected(event):
+    """Callback quando arquivo de vídeo é selecionado."""
+    files = video_file_input.files
+    if files.length > 0:
+        load_video_file(files.item(0))
+
+
+def load_video_file(file):
+    """Carrega arquivo de vídeo."""
+    global video_captions, video_last_caption_time
+    
+    video_captions = []
+    video_last_caption_time = None
+    
+    url = URL.createObjectURL(file)
+    local_video.src = url
+    
+    video_drop_zone.classList.add('hidden')
+    video_player_container.classList.remove('hidden')
+    video_download_section.classList.add('hidden')
+    
+    console.log(f"Video loaded: {file.name}")
+
+
+def on_video_loaded_metadata(event):
+    """Callback quando metadados do vídeo são carregados."""
+    video_timeline.max = local_video.duration
+    total_time_display.textContent = format_time_display(local_video.duration)
+    current_time_display.textContent = "00:00"
+    console.log(f"Video duration: {local_video.duration}s")
+
+
+def on_video_time_update(event):
+    """Callback quando tempo do vídeo muda."""
+    video_timeline.value = local_video.currentTime
+    current_time_display.textContent = format_time_display(local_video.currentTime)
+
+
+def on_timeline_change(event):
+    """Callback quando timeline é arrastada."""
+    local_video.currentTime = float(video_timeline.value)
+
+
+def toggle_play_pause(event):
+    """Alterna play/pause do vídeo."""
+    if local_video.paused:
+        local_video.play()
+        play_pause_btn.textContent = "⏸️"
+    else:
+        local_video.pause()
+        play_pause_btn.textContent = "▶️"
+
+
+def stop_local_video(event):
+    """Para o vídeo e volta ao início."""
+    local_video.pause()
+    local_video.currentTime = 0
+    play_pause_btn.textContent = "▶️"
+
+
+def prev_frame(event):
+    """Retrocede 1 frame (~33ms para 30fps)."""
+    local_video.pause()
+    local_video.currentTime = max(0, local_video.currentTime - 0.033)
+    play_pause_btn.textContent = "▶️"
+
+
+def next_frame(event):
+    """Avança 1 frame (~33ms para 30fps)."""
+    local_video.pause()
+    local_video.currentTime = min(local_video.duration, local_video.currentTime + 0.033)
+    play_pause_btn.textContent = "▶️"
+
+
+def rewind_video(event):
+    """Retrocede 5 segundos."""
+    local_video.currentTime = max(0, local_video.currentTime - 5)
+
+
+def forward_video(event):
+    """Avança 5 segundos."""
+    local_video.currentTime = min(local_video.duration, local_video.currentTime + 5)
+
+
+def change_playback_speed(event):
+    """Altera velocidade de reprodução."""
+    local_video.playbackRate = float(playback_speed_select.value)
+    console.log(f"Playback speed: {playback_speed_select.value}x")
+
+
+def show_video_upload(event):
+    """Mostra área de upload de vídeo."""
+    video_player_container.classList.add('hidden')
+    video_drop_zone.classList.remove('hidden')
+    video_download_section.classList.add('hidden')
+
+
+def capture_local_video_frame() -> str:
+    """Captura frame do vídeo local como base64."""
+    if local_video.videoWidth == 0:
+        return None
+    
+    local_video_canvas.width = local_video.videoWidth
+    local_video_canvas.height = local_video.videoHeight
+    context = local_video_canvas.getContext('2d')
+    context.drawImage(local_video, 0, 0, local_video_canvas.width, local_video_canvas.height)
+    return local_video_canvas.toDataURL('image/jpeg', 0.8)
+
+
+def download_video_captions(event):
+    """Download das legendas do vídeo local."""
+    global video_captions
+    
+    if len(video_captions) == 0:
+        window.alert("Nenhuma legenda gerada!")
+        return
+    
+    srt_content = generate_srt_content(video_captions)
+    
+    blob = Blob.new(
+        to_js([srt_content]),
+        to_js({"type": "text/plain"}, dict_converter=Object.fromEntries)
+    )
+    
+    url = URL.createObjectURL(blob)
+    a = document.createElement('a')
+    a.href = url
+    a.download = "video_captions.srt"
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+
+
+# =============================================================================
+# FUNÇÕES DE IMAGEM
+# =============================================================================
+
+def on_image_file_selected(event):
+    """Callback quando arquivo de imagem é selecionado."""
+    files = image_file_input.files
+    if files.length > 0:
+        load_image_file(files.item(0))
+
+
+def load_image_file(file):
+    """Carrega arquivo de imagem."""
+    global current_image_base64
+    
+    reader = FileReader.new()
+    
+    def on_load(e):
+        global current_image_base64
+        current_image_base64 = reader.result
+        loaded_image.src = current_image_base64
+        
+        image_drop_zone.classList.add('hidden')
+        image_viewer_container.classList.remove('hidden')
+        
+        console.log(f"Image loaded: {file.name}")
+    
+    reader.onload = create_proxy(on_load)
+    reader.readAsDataURL(file)
+
+
+def show_image_upload(event):
+    """Mostra área de upload de imagem."""
+    image_viewer_container.classList.add('hidden')
+    image_drop_zone.classList.remove('hidden')
+
+
+async def analyze_current_image():
+    """Analisa a imagem carregada."""
+    global current_image_base64
+    
+    if current_image_base64 is None:
+        response_text.value = "Nenhuma imagem carregada."
+        return
+    
+    response_text.value = "Analisando imagem..."
+    
+    instruction = instruction_text.value
+    response = await send_chat_completion_request(instruction, current_image_base64)
+    response_text.value = response
+
+
+def on_analyze_image_click(event):
+    """Callback do botão de análise de imagem."""
+    asyncio.ensure_future(analyze_current_image())
+
+
+# =============================================================================
+# DRAG & DROP
+# =============================================================================
+
+def setup_drag_drop(drop_zone, file_input, file_handler):
+    """Configura drag & drop para uma área."""
+    
+    def on_dragover(e):
+        e.preventDefault()
+        drop_zone.classList.add('dragover')
+    
+    def on_dragleave(e):
+        drop_zone.classList.remove('dragover')
+    
+    def on_drop(e):
+        e.preventDefault()
+        drop_zone.classList.remove('dragover')
+        
+        files = e.dataTransfer.files
+        if files.length > 0:
+            file_handler(files.item(0))
+    
+    drop_zone.addEventListener('dragover', create_proxy(on_dragover))
+    drop_zone.addEventListener('dragleave', create_proxy(on_dragleave))
+    drop_zone.addEventListener('drop', create_proxy(on_drop))
+
+
+# =============================================================================
+# LOOP DE PROCESSAMENTO
 # =============================================================================
 
 async def send_data():
-    """
-    Captura um frame e envia para a API de visão.
-    
-    Esta função é chamada repetidamente pelo processing_loop
-    no intervalo configurado pelo usuário.
-    """
+    """Processa frame conforme a aba atual."""
     global is_processing
     
     if not is_processing:
         return
     
-    # Obtém a instrução do usuário
     instruction = instruction_text.value
+    image_base64 = None
     
-    # Captura o frame atual da webcam
-    image_base64_url = capture_image()
+    if current_tab == "webcam":
+        image_base64 = capture_webcam_frame()
+    elif current_tab == "video":
+        image_base64 = capture_local_video_frame()
     
-    if image_base64_url is None:
-        response_text.value = "Failed to capture image. Stream might not be active."
+    if image_base64 is None:
+        response_text.value = "Falha ao capturar frame."
         return
     
-    # Envia para a API e obtém resposta
-    response = await send_chat_completion_request(instruction, image_base64_url)
-    
-    # Exibe resposta na interface
+    response = await send_chat_completion_request(instruction, image_base64)
     response_text.value = response
     
-    # Se gravação ativada, adiciona a resposta como legenda
-    if enable_recording.checked and recording_start_time is not None:
-        add_caption(response)
+    # Adiciona legenda
+    if current_tab == "webcam" and enable_recording.checked and recording_start_time is not None:
+        add_webcam_caption(response)
+    elif current_tab == "video":
+        add_video_caption(response)
 
 
 async def processing_loop():
-    """
-    Loop principal que processa frames continuamente.
-    
-    Executa send_data() no intervalo configurado pelo usuário
-    até que is_processing seja definido como False.
-    """
+    """Loop principal de processamento."""
     global is_processing
     
-    # Obtém intervalo configurado (em ms) e converte para segundos
     interval_ms = int(interval_select.value)
     interval_s = interval_ms / 1000.0
     
@@ -687,93 +827,92 @@ async def processing_loop():
 # =============================================================================
 
 def handle_start():
-    """
-    Inicia o processamento de vídeo.
+    """Inicia o processamento."""
+    global is_processing, processing_task, video_captions, video_last_caption_time
     
-    Valida configurações, inicia o loop de processamento
-    e opcionalmente inicia a gravação de vídeo.
-    """
-    global is_processing, stream, processing_task
-    
-    # Verifica se a câmera está disponível
-    if stream is None:
-        response_text.value = "Camera not available. Cannot start."
-        window.alert("Camera not available. Please grant permission first.")
-        return
-    
-    # Valida formato da URL base
+    # Validações
     url_value = base_url.value
     if not (url_value.startswith('http://') or url_value.startswith('https://')):
-        response_text.value = "Invalid base URL. Must start with http:// or https://"
-        window.alert("Please enter a valid base URL (e.g., http://localhost:1234)")
+        response_text.value = "URL inválida. Use http:// ou https://"
         return
     
-    # Atualiza estado
-    is_processing = True
+    if current_tab == "webcam":
+        if stream is None:
+            response_text.value = "Câmera não disponível."
+            return
+    elif current_tab == "video":
+        if local_video.src == "":
+            response_text.value = "Nenhum vídeo carregado."
+            return
+        # Reseta legendas do vídeo
+        video_captions = []
+        video_last_caption_time = None
+        # Inicia o vídeo
+        local_video.play()
+        play_pause_btn.textContent = "⏸️"
+    elif current_tab == "image":
+        # Para imagem, faz análise única
+        asyncio.ensure_future(analyze_current_image())
+        return
     
-    # Atualiza botão para modo "Stop"
+    is_processing = True
     start_button.textContent = "Stop"
     start_button.classList.remove('start')
     start_button.classList.add('stop')
     
-    # Desabilita controles durante processamento
+    # Desabilita controles
     instruction_text.disabled = True
     interval_select.disabled = True
     api_provider.disabled = True
     base_url.disabled = True
-    enable_recording.disabled = True
     
-    response_text.value = "Processing started..."
+    if current_tab == "webcam":
+        enable_recording.disabled = True
+        if enable_recording.checked:
+            start_webcam_recording()
     
-    # Inicia gravação se checkbox marcado
-    if enable_recording.checked:
-        start_recording()
+    response_text.value = "Processando..."
     
-    # Inicia o loop de processamento assíncrono
     processing_task = asyncio.ensure_future(processing_loop())
 
 
 def handle_stop():
-    """
-    Para o processamento de vídeo.
-    
-    Cancela o loop, para a gravação se ativa,
-    e reabilita os controles da interface.
-    """
+    """Para o processamento."""
     global is_processing, processing_task
     
     is_processing = False
     
-    # Cancela a task do loop
     if processing_task:
         processing_task.cancel()
         processing_task = None
     
-    # Para a gravação se estava ativa
-    if enable_recording.checked:
-        stop_recording()
-    
-    # Atualiza botão para modo "Start"
-    start_button.textContent = "Start"
+    start_button.textContent = "Start" if current_tab != "image" else "Analisar"
     start_button.classList.remove('stop')
     start_button.classList.add('start')
     
     # Reabilita controles
     instruction_text.disabled = False
-    interval_select.disabled = False
+    interval_select.disabled = current_tab == "image"
     api_provider.disabled = False
     base_url.disabled = False
-    enable_recording.disabled = False
     
-    if response_text.value.startswith("Processing started..."):
-        response_text.value = "Processing stopped."
+    if current_tab == "webcam":
+        enable_recording.disabled = False
+        if enable_recording.checked:
+            stop_webcam_recording()
+    elif current_tab == "video":
+        local_video.pause()
+        play_pause_btn.textContent = "▶️"
+        # Mostra download de legendas
+        if len(video_captions) > 0:
+            video_download_section.classList.remove('hidden')
+    
+    if response_text.value == "Processando...":
+        response_text.value = "Processamento parado."
 
 
 def toggle_processing(event):
-    """
-    Alterna entre iniciar e parar o processamento.
-    Callback do botão Start/Stop.
-    """
+    """Alterna entre iniciar e parar."""
     global is_processing
     if is_processing:
         handle_stop()
@@ -782,22 +921,41 @@ def toggle_processing(event):
 
 
 # =============================================================================
+# ATALHOS DE TECLADO
+# =============================================================================
+
+def on_keydown(event):
+    """Trata atalhos de teclado."""
+    # Ignora se estiver digitando em input/textarea
+    tag = event.target.tagName.lower()
+    if tag in ['input', 'textarea', 'select']:
+        return
+    
+    key = event.key
+    
+    if current_tab == "video":
+        if key == " ":  # Espaço = Play/Pause
+            event.preventDefault()
+            toggle_play_pause(event)
+        elif key == "ArrowLeft":  # Seta esquerda = Frame anterior
+            event.preventDefault()
+            prev_frame(event)
+        elif key == "ArrowRight":  # Seta direita = Próximo frame
+            event.preventDefault()
+            next_frame(event)
+
+
+# =============================================================================
 # LIMPEZA DE RECURSOS
 # =============================================================================
 
 def cleanup(event):
-    """
-    Limpa recursos ao sair da página.
-    
-    Para o processamento e libera a câmera para que
-    outros aplicativos possam utilizá-la.
-    """
+    """Limpa recursos ao sair da página."""
     global stream, is_processing
     
     is_processing = False
     
     if stream:
-        # Para todas as tracks do stream (libera a câmera)
         tracks = stream.getTracks()
         for i in range(tracks.length):
             tracks[i].stop()
@@ -807,32 +965,60 @@ def cleanup(event):
 # REGISTRO DE EVENT LISTENERS
 # =============================================================================
 
-# Conecta eventos da interface às funções Python
+# Abas
+tab_buttons = document.querySelectorAll('.tab-btn')
+for i in range(tab_buttons.length):
+    tab_buttons[i].addEventListener('click', create_proxy(switch_tab))
+
+# Controles comuns
 api_provider.addEventListener('change', create_proxy(update_base_url))
 start_button.addEventListener('click', create_proxy(toggle_processing))
-download_video_btn.addEventListener('click', create_proxy(download_video))
-download_captions_btn.addEventListener('click', create_proxy(download_captions_file))
-camera_select.addEventListener('change', create_proxy(on_camera_change))
 
-# Limpa recursos quando o usuário fecha/navega para fora da página
+# Webcam
+camera_select.addEventListener('change', create_proxy(on_camera_change))
+download_video_btn.addEventListener('click', create_proxy(download_webcam_video))
+download_captions_btn.addEventListener('click', create_proxy(download_webcam_captions))
+
+# Vídeo local
+video_file_input.addEventListener('change', create_proxy(on_video_file_selected))
+local_video.addEventListener('loadedmetadata', create_proxy(on_video_loaded_metadata))
+local_video.addEventListener('timeupdate', create_proxy(on_video_time_update))
+video_timeline.addEventListener('input', create_proxy(on_timeline_change))
+play_pause_btn.addEventListener('click', create_proxy(toggle_play_pause))
+stop_video_btn.addEventListener('click', create_proxy(stop_local_video))
+prev_frame_btn.addEventListener('click', create_proxy(prev_frame))
+next_frame_btn.addEventListener('click', create_proxy(next_frame))
+rewind_btn.addEventListener('click', create_proxy(rewind_video))
+forward_btn.addEventListener('click', create_proxy(forward_video))
+playback_speed_select.addEventListener('change', create_proxy(change_playback_speed))
+change_video_btn.addEventListener('click', create_proxy(show_video_upload))
+download_video_srt_btn.addEventListener('click', create_proxy(download_video_captions))
+
+# Imagem
+image_file_input.addEventListener('change', create_proxy(on_image_file_selected))
+analyze_image_btn.addEventListener('click', create_proxy(on_analyze_image_click))
+change_image_btn.addEventListener('click', create_proxy(show_image_upload))
+
+# Drag & Drop
+setup_drag_drop(video_drop_zone, video_file_input, load_video_file)
+setup_drag_drop(image_drop_zone, image_file_input, load_image_file)
+
+# Atalhos de teclado
+document.addEventListener('keydown', create_proxy(on_keydown))
+
+# Limpeza
 window.addEventListener('beforeunload', create_proxy(cleanup))
 
 
 # =============================================================================
-# INICIALIZAÇÃO DA APLICAÇÃO
+# INICIALIZAÇÃO
 # =============================================================================
 
 async def main():
-    """
-    Função principal de inicialização.
-    
-    Inicializa a câmera e remove o overlay de carregamento
-    quando o PyScript estiver pronto.
-    """
+    """Função principal de inicialização."""
     await init_camera()
     loading_overlay.classList.add('hidden')
-    console.log("PyScript Camera App initialized!")
+    console.log("Vision AI App initialized!")
 
 
-# Inicia a aplicação assim que o módulo é carregado
 asyncio.ensure_future(main())

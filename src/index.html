@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="pt-BR" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Camera Interaction App (PyScript)</title>
+    <title>Vision AI - Análise de Vídeo e Imagem</title>
     
     <!-- Pico CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
@@ -13,7 +13,7 @@
     <script type="module" src="https://pyscript.net/releases/2024.11.1/core.js"></script>
     
     <!-- Custom styles -->
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
     <div id="loadingOverlay" class="loading-overlay">
@@ -23,24 +23,137 @@
     <main class="container">
         <header>
             <h1>
-                Camera Interaction App 
+                Vision AI
                 <span class="pyscript-badge">PyScript</span>
                 <span id="recordingIndicator" class="recording-indicator hidden">● REC</span>
             </h1>
         </header>
 
-        <article>
-            <label>
-                📷 Câmera
-                <select id="cameraSelect" name="Camera">
-                    <option value="">Carregando câmeras...</option>
-                </select>
-            </label>
-            <video id="videoFeed" autoplay playsinline></video>
-            <canvas id="canvas" class="hidden"></canvas>
-        </article>
+        <!-- Sistema de Abas -->
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="webcam">📷 Webcam</button>
+            <button class="tab-btn" data-tab="video">🎬 Vídeo Local</button>
+            <button class="tab-btn" data-tab="image">🖼️ Imagem</button>
+        </nav>
 
-        <article>
+        <!-- Conteúdo das Abas -->
+        <div class="tab-content">
+            
+            <!-- Aba Webcam -->
+            <article id="tab-webcam" class="tab-panel active">
+                <label>
+                    📷 Câmera
+                    <select id="cameraSelect" name="Camera">
+                        <option value="">Carregando câmeras...</option>
+                    </select>
+                </label>
+                <video id="videoFeed" autoplay playsinline></video>
+                <canvas id="canvas" class="hidden"></canvas>
+                
+                <!-- Opção de Gravação -->
+                <fieldset>
+                    <label>
+                        <input type="checkbox" id="enableRecording" name="enableRecording">
+                        Gravar vídeo com legendas
+                    </label>
+                </fieldset>
+                
+                <!-- Botões de Download (ocultos por padrão) -->
+                <div id="downloadSection" class="download-section hidden">
+                    <p><strong>Gravação concluída!</strong> Baixe os arquivos:</p>
+                    <div class="grid">
+                        <button id="downloadVideo" class="secondary">
+                            📹 Download Vídeo (.webm)
+                        </button>
+                        <button id="downloadCaptions" class="secondary">
+                            📝 Download Legendas (.srt)
+                        </button>
+                    </div>
+                </div>
+            </article>
+            
+            <!-- Aba Vídeo Local -->
+            <article id="tab-video" class="tab-panel hidden">
+                <div class="file-upload-area" id="videoDropZone">
+                    <input type="file" id="videoFileInput" accept="video/*" class="hidden">
+                    <label for="videoFileInput" class="upload-label">
+                        <span class="upload-icon">🎬</span>
+                        <span>Arraste um vídeo aqui ou clique para selecionar</span>
+                        <span class="upload-hint">Formatos: MP4, WebM, MOV, AVI</span>
+                    </label>
+                </div>
+                
+                <div id="videoPlayerContainer" class="hidden">
+                    <video id="localVideo" class="local-video"></video>
+                    <canvas id="localVideoCanvas" class="hidden"></canvas>
+                    
+                    <!-- Timeline -->
+                    <div class="video-timeline">
+                        <input type="range" id="videoTimeline" min="0" max="100" value="0" step="0.1">
+                        <div class="time-display">
+                            <span id="currentTime">00:00</span>
+                            <span>/</span>
+                            <span id="totalTime">00:00</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Controles do Player -->
+                    <div class="player-controls">
+                        <div class="controls-left">
+                            <button id="prevFrame" class="control-btn" title="Frame anterior">⏮️</button>
+                            <button id="rewind" class="control-btn" title="Retroceder 5s">⏪</button>
+                            <button id="playPause" class="control-btn primary" title="Play/Pause">▶️</button>
+                            <button id="stopVideo" class="control-btn" title="Parar">⏹️</button>
+                            <button id="forward" class="control-btn" title="Avançar 5s">⏩</button>
+                            <button id="nextFrame" class="control-btn" title="Próximo frame">⏭️</button>
+                        </div>
+                        <div class="controls-right">
+                            <select id="playbackSpeed" class="speed-select">
+                                <option value="0.25">0.25x</option>
+                                <option value="0.5">0.5x</option>
+                                <option value="1" selected>1x</option>
+                                <option value="1.5">1.5x</option>
+                                <option value="2">2x</option>
+                            </select>
+                            <button id="changeVideo" class="control-btn secondary" title="Trocar vídeo">📁</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Download de Legendas do Vídeo Local -->
+                    <div id="videoDownloadSection" class="download-section hidden">
+                        <p><strong>Análise concluída!</strong></p>
+                        <button id="downloadVideoSrt" class="secondary">
+                            📝 Download Legendas (.srt)
+                        </button>
+                    </div>
+                </div>
+            </article>
+            
+            <!-- Aba Imagem -->
+            <article id="tab-image" class="tab-panel hidden">
+                <div class="file-upload-area" id="imageDropZone">
+                    <input type="file" id="imageFileInput" accept="image/*" class="hidden">
+                    <label for="imageFileInput" class="upload-label">
+                        <span class="upload-icon">🖼️</span>
+                        <span>Arraste uma imagem aqui ou clique para selecionar</span>
+                        <span class="upload-hint">Formatos: JPG, PNG, WebP, GIF</span>
+                    </label>
+                </div>
+                
+                <div id="imageViewerContainer" class="hidden">
+                    <img id="loadedImage" class="loaded-image" alt="Imagem carregada">
+                    <canvas id="imageCanvas" class="hidden"></canvas>
+                    
+                    <div class="image-controls">
+                        <button id="analyzeImage" class="primary">🔍 Analisar Imagem</button>
+                        <button id="changeImage" class="secondary">📁 Trocar Imagem</button>
+                    </div>
+                </div>
+            </article>
+        </div>
+
+        <!-- Controles Comuns -->
+        <article class="common-controls">
             <div class="grid">
                 <label>
                     Provedor da API
@@ -64,12 +177,10 @@
                 Response
                 <textarea id="responseText" name="Response" rows="2" readonly placeholder="Server response will appear here..."></textarea>
             </label>
-        </article>
 
-        <article>
             <div class="grid">
                 <label>
-                    Interval between requests
+                    Intervalo entre requisições
                     <select id="intervalSelect" name="Interval">
                         <option value="100">100ms</option>
                         <option value="250">250ms</option>
@@ -82,30 +193,9 @@
                     <button id="startButton" class="start">Start</button>
                 </div>
             </div>
-            
-            <!-- Recording option -->
-            <fieldset>
-                <label>
-                    <input type="checkbox" id="enableRecording" name="enableRecording">
-                    Gravar vídeo com legendas
-                </label>
-            </fieldset>
-            
-            <!-- Download buttons (hidden by default) -->
-            <div id="downloadSection" class="download-section hidden">
-                <p><strong>Gravação concluída!</strong> Baixe os arquivos:</p>
-                <div class="grid">
-                    <button id="downloadVideo" class="secondary">
-                        📹 Download Vídeo (.webm)
-                    </button>
-                    <button id="downloadCaptions" class="secondary">
-                        📝 Download Legendas (.srt)
-                    </button>
-                </div>
-            </div>
         </article>
     </main>
 
-    <script type="py" src="camera_app.py?v=2"></script>
+    <script type="py" src="camera_app.py?v=4"></script>
 </body>
 </html>
