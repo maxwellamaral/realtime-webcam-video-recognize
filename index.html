@@ -1,57 +1,104 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Camera Interaction App (PyScript)</title>
+    
+    <!-- Pico CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    
+    <!-- PyScript -->
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.11.1/core.css">
-    <link rel="stylesheet" href="styles.css">
     <script type="module" src="https://pyscript.net/releases/2024.11.1/core.js"></script>
+    
+    <!-- Custom styles -->
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
     <div id="loadingOverlay" class="loading-overlay">
         <div>🐍 Carregando PyScript...</div>
     </div>
 
-    <h1>Camera Interaction App <span class="pyscript-badge">PyScript</span></h1>
+    <main class="container">
+        <header>
+            <h1>
+                Camera Interaction App 
+                <span class="pyscript-badge">PyScript</span>
+                <span id="recordingIndicator" class="recording-indicator hidden">● REC</span>
+            </h1>
+        </header>
 
-    <video id="videoFeed" autoplay playsinline></video>
-    <canvas id="canvas" class="hidden"></canvas>
+        <article>
+            <video id="videoFeed" autoplay playsinline></video>
+            <canvas id="canvas" class="hidden"></canvas>
+        </article>
 
-    <div class="io-areas">
-        <div>
-            <label for="apiProvider">Provedor da API:</label><br>
-            <select id="apiProvider" name="API Provider">
-                <option value="llamacpp">llama.cpp</option>
-                <option value="lmstudio" selected>LM Studio</option>
-            </select>
-        </div>
-        <div>
-            <label for="baseURL">Base API:</label><br>
-            <input type="text" id="baseURL" name="Base URL" value="http://localhost:1234">
-        </div>
-        <div>
-            <label for="instructionText">Instruction:</label><br>
-            <textarea id="instructionText" style="height: 2em; width: 40em" name="Instruction">What do you see?</textarea>
-        </div>
-        <div>
-            <label for="responseText">Response:</label><br>
-            <textarea id="responseText" style="height: 2em; width: 40em" name="Response" readonly placeholder="Server response will appear here..."></textarea>
-        </div>
-    </div>
+        <article>
+            <div class="grid">
+                <label>
+                    Provedor da API
+                    <select id="apiProvider" name="API Provider">
+                        <option value="llamacpp">llama.cpp</option>
+                        <option value="lmstudio" selected>LM Studio</option>
+                    </select>
+                </label>
+                <label>
+                    Base API
+                    <input type="text" id="baseURL" name="Base URL" value="http://localhost:1234">
+                </label>
+            </div>
 
-    <div class="controls">
-        <label for="intervalSelect">Interval between 2 requests:</label>
-        <select id="intervalSelect" name="Interval between 2 requests">
-            <option value="100">100ms</option>
-            <option value="250">250ms</option>
-            <option value="500" selected>500ms</option>
-            <option value="1000">1s</option>
-            <option value="2000">2s</option>
-        </select>
-        <button id="startButton" class="start">Start</button>
-    </div>
+            <label>
+                Instruction
+                <textarea id="instructionText" name="Instruction" rows="2">What do you see?</textarea>
+            </label>
+
+            <label>
+                Response
+                <textarea id="responseText" name="Response" rows="2" readonly placeholder="Server response will appear here..."></textarea>
+            </label>
+        </article>
+
+        <article>
+            <div class="grid">
+                <label>
+                    Interval between requests
+                    <select id="intervalSelect" name="Interval">
+                        <option value="100">100ms</option>
+                        <option value="250">250ms</option>
+                        <option value="500" selected>500ms</option>
+                        <option value="1000">1s</option>
+                        <option value="2000">2s</option>
+                    </select>
+                </label>
+                <div class="button-container">
+                    <button id="startButton" class="start">Start</button>
+                </div>
+            </div>
+            
+            <!-- Recording option -->
+            <fieldset>
+                <label>
+                    <input type="checkbox" id="enableRecording" name="enableRecording">
+                    Gravar vídeo com legendas
+                </label>
+            </fieldset>
+            
+            <!-- Download buttons (hidden by default) -->
+            <div id="downloadSection" class="download-section hidden">
+                <p><strong>Gravação concluída!</strong> Baixe os arquivos:</p>
+                <div class="grid">
+                    <button id="downloadVideo" class="secondary">
+                        📹 Download Vídeo (.webm)
+                    </button>
+                    <button id="downloadCaptions" class="secondary">
+                        📝 Download Legendas (.srt)
+                    </button>
+                </div>
+            </div>
+        </article>
+    </main>
 
     <script type="py" src="camera_app.py"></script>
 </body>

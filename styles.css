@@ -1,106 +1,114 @@
-body {
-  font-family: sans-serif;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  padding: 20px;
-  background-color: #f0f0f0;
-}
+/* Custom styles to complement Pico CSS */
 
-.controls,
-.io-areas {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  background-color: #fff;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.io-areas {
-  flex-direction: column;
-  align-items: stretch;
-}
-
-textarea,
-input[type="text"] {
-  width: 300px;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-textarea {
-  height: 80px;
-}
-
+/* Video feed styling */
 #videoFeed {
-  width: 480px;
-  height: 360px;
-  border: 2px solid #333;
-  background-color: #000;
-  border-radius: 8px;
+    width: 100%;
+    max-width: 640px;
+    aspect-ratio: 4/3;
+    border-radius: var(--pico-border-radius);
+    background-color: #000;
+    display: block;
+    margin: 0 auto;
 }
 
-#startButton {
-  padding: 10px 20px;
-  font-size: 16px;
-  cursor: pointer;
-  border: none;
-  border-radius: 4px;
-  color: white;
+/* Hidden elements */
+.hidden {
+    display: none;
 }
 
+/* PyScript badge */
+.pyscript-badge {
+    background: linear-gradient(135deg, #306998, #FFD43B);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 2rem;
+    font-size: 0.75rem;
+    font-weight: bold;
+    vertical-align: middle;
+    margin-left: 0.5rem;
+}
+
+/* Recording indicator */
+.recording-indicator {
+    color: #dc3545;
+    font-size: 0.875rem;
+    font-weight: bold;
+    margin-left: 0.75rem;
+    animation: pulse 1s infinite;
+    vertical-align: middle;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+/* Start/Stop button colors */
 #startButton.start {
-  background-color: #28a745;
+    background-color: var(--pico-primary);
 }
 
 #startButton.stop {
-  background-color: #dc3545;
+    background-color: #dc3545;
+    border-color: #dc3545;
 }
 
-label {
-  font-weight: bold;
+/* Button container alignment */
+.button-container {
+    display: flex;
+    align-items: flex-end;
 }
 
-select {
-  padding: 8px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
+.button-container button {
+    width: 100%;
+    margin-bottom: 0;
 }
 
-.hidden {
-  display: none;
+/* Download section */
+.download-section {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--pico-card-background-color);
+    border-radius: var(--pico-border-radius);
+    border: 1px solid var(--pico-muted-border-color);
 }
 
-.pyscript-badge {
-  background: linear-gradient(135deg, #306998, #ffd43b);
-  color: white;
-  padding: 5px 15px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: bold;
-  margin-left: 10px;
+.download-section p {
+    margin-bottom: 1rem;
+    color: var(--pico-primary);
 }
 
+.download-section button {
+    margin-bottom: 0;
+}
+
+/* Loading overlay */
 .loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  color: white;
-  font-size: 24px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    color: white;
+    font-size: 1.5rem;
 }
 
 .loading-overlay.hidden {
-  display: none;
+    display: none;
+}
+
+/* Response textarea styling */
+#responseText {
+    background-color: var(--pico-form-element-disabled-background-color);
+}
+
+/* Recording enabled - video border effect */
+#videoFeed.recording {
+    border: 3px solid #dc3545;
+    box-shadow: 0 0 20px rgba(220, 53, 69, 0.4);
 }
