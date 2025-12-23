@@ -42,7 +42,7 @@ Este projeto foi inspirado no trabalho de **[smolvlm-realtime-webcam](https://gi
 ```bash
 # Clone o repositório
 git clone <repo-url>
-cd realtime-webcam
+cd realtime-webcam/src/
 
 # Inicie um servidor HTTP local
 python -m http.server 8000
