@@ -52,6 +52,9 @@ download_section = document.getElementById('downloadSection')     # Seção com 
 download_video_btn = document.getElementById('downloadVideo')     # Botão download vídeo
 download_captions_btn = document.getElementById('downloadCaptions') # Botão download legendas
 
+# Elemento de seleção de câmera
+camera_select = document.getElementById('cameraSelect')          # Select para escolher câmera
+
 # =============================================================================
 # ESTADO GLOBAL DA APLICAÇÃO
 # =============================================================================
@@ -67,6 +70,9 @@ recorded_chunks = []        # Lista de Blobs com chunks do vídeo gravado
 captions = []               # Lista de legendas: [{start, end, text}, ...]
 recording_start_time = None # Timestamp (segundos) do início da gravação
 last_caption_time = None    # Timestamp da última legenda (para calcular duração)
+
+# Lista de câmeras disponíveis
+available_cameras = []      # Lista de dispositivos de vídeo {deviceId, label}
 
 
 # =============================================================================
@@ -175,25 +181,161 @@ async def send_chat_completion_request(instruction: str, image_base64_url: str) 
 # FUNÇÕES DE CÂMERA
 # =============================================================================
 
+async def enumerate_cameras():
+    """
+    Enumera todas as câmeras disponíveis no dispositivo.
+    
+    Usa a API MediaDevices.enumerateDevices() para listar
+    todos os dispositivos de vídeo e popula o dropdown de seleção.
+    """
+    global available_cameras
+    
+    console.log("Starting camera enumeration...")
+    
+    try:
+        # Limpa o dropdown primeiro (remove todas as opções)
+        while camera_select.options.length > 0:
+            camera_select.remove(0)
+        
+        # Primeiro, solicita permissão de câmera para obter labels
+        # (sem permissão, os labels vêm vazios)
+        console.log("Requesting camera permission...")
+        temp_constraints = to_js({"video": True, "audio": False}, dict_converter=Object.fromEntries)
+        temp_stream = await navigator.mediaDevices.getUserMedia(temp_constraints)
+        
+        console.log("Permission granted, stopping temp stream...")
+        
+        # Para o stream temporário
+        tracks = temp_stream.getTracks()
+        for i in range(tracks.length):
+            tracks[i].stop()
+        
+        # Agora enumera os dispositivos (com labels)
+        console.log("Enumerating devices...")
+        devices = await navigator.mediaDevices.enumerateDevices()
+        
+        console.log(f"Total devices found: {devices.length}")
+        
+        # Filtra apenas dispositivos de vídeo (câmeras)
+        available_cameras = []
+        
+        for i in range(devices.length):
+            device = devices[i]
+            console.log(f"Device {i}: kind={device.kind}, label={device.label}")
+            
+            if device.kind == "videoinput":
+                device_id = device.deviceId
+                # Usa label ou nome genérico se não disponível
+                label = device.label if device.label else f"Câmera {len(available_cameras) + 1}"
+                
+                available_cameras.append({
+                    "deviceId": device_id,
+                    "label": label
+                })
+                
+                # Adiciona opção ao dropdown
+                option = document.createElement("option")
+                option.value = device_id
+                option.textContent = label
+                camera_select.appendChild(option)
+                console.log(f"Added camera: {label}")
+        
+        console.log(f"Found {len(available_cameras)} camera(s)")
+        
+        if len(available_cameras) == 0:
+            option = document.createElement("option")
+            option.value = ""
+            option.textContent = "Nenhuma câmera encontrada"
+            camera_select.appendChild(option)
+            
+    except Exception as e:
+        console.error(f"Error enumerating cameras: {str(e)}")
+        # Limpa o dropdown em caso de erro
+        while camera_select.options.length > 0:
+            camera_select.remove(0)
+        option = document.createElement("option")
+        option.value = ""
+        option.textContent = f"Erro: {str(e)}"
+        camera_select.appendChild(option)
+
+
+async def switch_camera(device_id: str = None):
+    """
+    Troca para uma câmera específica.
+    
+    Args:
+        device_id: ID do dispositivo de câmera (ou None para usar padrão)
+        
+    Para o stream atual e inicia um novo com a câmera selecionada.
+    """
+    global stream
+    
+    try:
+        # Para o stream atual se existir
+        if stream:
+            tracks = stream.getTracks()
+            for i in range(tracks.length):
+                tracks[i].stop()
+        
+        # Configura constraints com deviceId específico se fornecido
+        if device_id:
+            video_constraints = to_js({
+                "deviceId": {"exact": device_id}
+            }, dict_converter=Object.fromEntries)
+        else:
+            video_constraints = True
+        
+        constraints = to_js({
+            "video": video_constraints,
+            "audio": False
+        }, dict_converter=Object.fromEntries)
+        
+        # Solicita acesso à câmera selecionada
+        stream = await navigator.mediaDevices.getUserMedia(constraints)
+        
+        # Conecta o stream ao elemento de vídeo
+        video.srcObject = stream
+        
+        response_text.value = "Câmera alterada com sucesso."
+        console.log(f"Switched to camera: {device_id}")
+        
+    except Exception as e:
+        error_msg = f"Erro ao trocar câmera: {str(e)}"
+        console.error(error_msg)
+        response_text.value = error_msg
+
+
+def on_camera_change(event):
+    """
+    Callback quando o usuário seleciona outra câmera no dropdown.
+    """
+    device_id = camera_select.value
+    if device_id:
+        asyncio.ensure_future(switch_camera(device_id))
+
+
 async def init_camera():
     """
     Inicializa o acesso à webcam do usuário.
     
-    Solicita permissão de câmera e conecta o stream ao elemento <video>.
+    Enumera câmeras disponíveis, popula o dropdown de seleção,
+    e conecta a primeira câmera ao elemento <video>.
     Requer HTTPS ou localhost por questões de segurança do navegador.
     """
     global stream
+    
     try:
-        # Configuração: apenas vídeo, sem áudio
-        constraints = to_js({"video": True, "audio": False}, dict_converter=Object.fromEntries)
+        # Enumera câmeras disponíveis primeiro
+        await enumerate_cameras()
         
-        # Solicita acesso à câmera (mostra popup de permissão no navegador)
-        stream = await navigator.mediaDevices.getUserMedia(constraints)
+        # Se houver câmeras, conecta a primeira
+        if len(available_cameras) > 0:
+            first_camera_id = available_cameras[0]["deviceId"]
+            await switch_camera(first_camera_id)
+            response_text.value = "Câmera inicializada. Pronto para começar."
+        else:
+            response_text.value = "Nenhuma câmera encontrada."
         
-        # Conecta o stream ao elemento de vídeo HTML
-        video.srcObject = stream
-        
-        response_text.value = "Camera access granted. Ready to start."
         console.log("Camera initialized successfully")
         
     except Exception as e:
@@ -670,6 +812,7 @@ api_provider.addEventListener('change', create_proxy(update_base_url))
 start_button.addEventListener('click', create_proxy(toggle_processing))
 download_video_btn.addEventListener('click', create_proxy(download_video))
 download_captions_btn.addEventListener('click', create_proxy(download_captions_file))
+camera_select.addEventListener('change', create_proxy(on_camera_change))
 
 # Limpa recursos quando o usuário fecha/navega para fora da página
 window.addEventListener('beforeunload', create_proxy(cleanup))

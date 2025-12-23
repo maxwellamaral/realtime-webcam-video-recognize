@@ -30,6 +30,12 @@
         </header>
 
         <article>
+            <label>
+                📷 Câmera
+                <select id="cameraSelect" name="Camera">
+                    <option value="">Carregando câmeras...</option>
+                </select>
+            </label>
             <video id="videoFeed" autoplay playsinline></video>
             <canvas id="canvas" class="hidden"></canvas>
         </article>
@@ -100,6 +106,6 @@
         </article>
     </main>
 
-    <script type="py" src="camera_app.py"></script>
+    <script type="py" src="camera_app.py?v=2"></script>
 </body>
 </html>
