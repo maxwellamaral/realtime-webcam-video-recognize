@@ -38,7 +38,7 @@ Requisitos:
 
 Autor: Maxwell Amaral
 Versão: 1.0.0
-Data: Dezembro 2024
+Data: Dezembro 2025
 Licença: MIT
 
 Nota sobre IA:
