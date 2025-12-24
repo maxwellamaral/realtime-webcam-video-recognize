@@ -6,11 +6,11 @@
 [![Python](https://img.shields.io/badge/Python-PyScript-blue)](https://pyscript.net/)
 [![AI Assisted](https://img.shields.io/badge/AI%20Assisted-Antigravity-purple)]()
 
-## 📖 Sobre
+## Sobre
 
 Este projeto permite capturar vídeo da webcam e enviá-lo para modelos de visão computacional (VLM) para análise em tempo real. Todo o código Python é executado diretamente no navegador usando **PyScript**, sem necessidade de backend.
 
-### 🎯 Inspiração
+### Inspiração
 
 Este projeto foi inspirado no trabalho de **[smolvlm-realtime-webcam](https://github.com/ngxson/smolvlm-realtime-webcam)** por ngxson, porém com implementação diferente:
 
@@ -18,9 +18,9 @@ Este projeto foi inspirado no trabalho de **[smolvlm-realtime-webcam](https://gi
 - **LM Studio**: Backend local para inferência
 - **Modelos testados**: `SmolVLM-500M-Instruct-GGUF`, `qwen3-vl-8b-instruct`
 
-## ✨ Funcionalidades
+## Funcionalidades
 
-### 📷 Webcam (Tempo Real)
+### Webcam (Tempo Real)
 
 | Funcionalidade           | Descrição                                         |
 | ------------------------ | ------------------------------------------------- |
@@ -32,7 +32,7 @@ Este projeto foi inspirado no trabalho de **[smolvlm-realtime-webcam](https://gi
 | 📝 **Legendas SRT**      | Geração de legendas timestampadas                 |
 | ⏸️ **Pause/Resume**      | Pausar e retomar webcam automaticamente           |
 
-### 🎬 Vídeo Local
+### Vídeo Local
 
 | Funcionalidade             | Descrição                            |
 | -------------------------- | ------------------------------------ |
@@ -44,7 +44,7 @@ Este projeto foi inspirado no trabalho de **[smolvlm-realtime-webcam](https://gi
 | ⌨️ **Atalhos de Teclado**  | Espaço (play/pause), setas (frames)  |
 | 📝 **Legendas SRT**        | Geração de legendas sincronizadas    |
 
-### 🖼️ Imagem Estática
+### Imagem Estática
 
 | Funcionalidade          | Descrição                            |
 | ----------------------- | ------------------------------------ |
@@ -52,7 +52,7 @@ Este projeto foi inspirado no trabalho de **[smolvlm-realtime-webcam](https://gi
 | 🖱️ **Drag & Drop**      | Arraste e solte arquivos para upload |
 | 🔍 **Análise Única**    | Análise pontual da imagem carregada  |
 
-### 🌙 Interface
+### Interface
 
 | Funcionalidade         | Descrição                               |
 | ---------------------- | --------------------------------------- |
@@ -60,7 +60,7 @@ Este projeto foi inspirado no trabalho de **[smolvlm-realtime-webcam](https://gi
 | 📱 **Responsivo**      | Adaptável a diferentes tamanhos de tela |
 | 🔄 **Sistema de Abas** | Navegação intuitiva entre modos         |
 
-## 🚀 Como Usar
+## Como Usar
 
 ### Pré-requisitos
 
@@ -90,7 +90,7 @@ python -m http.server 8000
 4. Opcionalmente, ative "Gravar vídeo com legendas"
 5. Clique em **Start**
 
-### 🖥️ Configurando o LM Studio
+### Configurando o LM Studio
 
 O LM Studio é uma aplicação desktop que permite executar modelos de linguagem localmente. Siga os passos abaixo para configurá-lo:
 
@@ -116,7 +116,7 @@ Na aba **Discover**, pesquise e baixe um dos modelos de visão recomendados:
 2. Selecione o modelo VLM carregado
 3. Configure as opções:
    - **Port**: 1234 (padrão)
-   - **CORS**: Ativado ✅ (importante para requisições do navegador)
+   - **CORS**: Ativado (importante para requisições do navegador)
 4. Clique em **Start Server**
 
 #### 4. Verificando a API
@@ -134,7 +134,7 @@ Na aplicação web:
 - **Provedor**: LM Studio
 - **Base API**: `http://localhost:1234`
 
-### ⚠️ Solução de Problemas
+### Solução de Problemas
 
 | Problema                   | Solução                                               |
 | -------------------------- | ----------------------------------------------------- |
@@ -143,7 +143,7 @@ Na aplicação web:
 | Modelo não suporta imagens | Use um modelo VLM (Vision Language Model)             |
 | Resposta lenta             | Reduza o intervalo ou use um modelo menor             |
 
-## 📁 Estrutura do Projeto
+## Estrutura do Projeto
 
 ```
 realtime-webcam/
@@ -159,7 +159,7 @@ realtime-webcam/
 └── CITATION.bib          # Referência BibLaTeX
 ```
 
-### 🏗️ Arquitetura de Classes
+### Arquitetura de Classes
 
 O código Python está organizado em 9 classes:
 
@@ -177,7 +177,7 @@ O código Python está organizado em 9 classes:
 
 Veja o diagrama completo em [`docs/class_diagram.md`](docs/class_diagram.md).
 
-## 🛠️ Tecnologias
+## Tecnologias
 
 - **[PyScript](https://pyscript.net/)** - Python no navegador
 - **[Pico CSS](https://picocss.com/)** - Framework CSS minimalista
@@ -185,7 +185,7 @@ Veja o diagrama completo em [`docs/class_diagram.md`](docs/class_diagram.md).
 - **WebRTC** - Acesso à webcam
 - **File API** - Upload de arquivos
 
-## 📚 Citação
+## Citação
 
 Se utilizar este projeto em trabalhos acadêmicos, por favor cite:
 
@@ -203,21 +203,21 @@ Se utilizar este projeto em trabalhos acadêmicos, por favor cite:
 }
 ```
 
-## 🤖 Desenvolvimento Assistido por IA
+## Desenvolvimento Assistido por IA
 
 Este projeto foi desenvolvido utilizando **engenharia de software assistida por IA Generativa** (Antigravity by Google DeepMind), com:
 
-- ✅ Supervisão e revisão humana
-- ✅ Acompanhamento profissional
-- ✅ Validação de boas práticas
+- Supervisão e revisão humana
+- Acompanhamento profissional
+- Validação de boas práticas
 
-## 📄 Licença
+## Licença
 
 Este projeto está licenciado sob a [Licença MIT](LICENSE) - veja o arquivo LICENSE para detalhes.
 
 **Requisito**: Ao utilizar este código, mencione o autor original.
 
-## 🙏 Agradecimentos
+## Agradecimentos
 
 - [ngxson](https://github.com/ngxson) pela inspiração do projeto original
 - [PyScript](https://pyscript.net/) pela tecnologia
