@@ -20,14 +20,45 @@ Este projeto foi inspirado no trabalho de **[smolvlm-realtime-webcam](https://gi
 
 ## ✨ Funcionalidades
 
+### 📷 Webcam (Tempo Real)
+
 | Funcionalidade           | Descrição                                         |
 | ------------------------ | ------------------------------------------------- |
-| 📷 **Captura de Webcam** | Acesso à câmera do dispositivo via navegador      |
+| 📹 **Captura de Webcam** | Acesso à câmera do dispositivo via navegador      |
+| 🎥 **Seleção de Câmera** | Escolha entre múltiplas câmeras disponíveis       |
 | 🤖 **Análise por VLM**   | Envio de frames para modelos de visão             |
 | ⏱️ **Tempo Real**        | Processamento contínuo com intervalo configurável |
 | 🎬 **Gravação de Vídeo** | Exportação do vídeo em formato WebM               |
 | 📝 **Legendas SRT**      | Geração de legendas timestampadas                 |
-| 🌙 **Tema Escuro**       | Interface moderna com Pico CSS                    |
+| ⏸️ **Pause/Resume**      | Pausar e retomar webcam automaticamente           |
+
+### 🎬 Vídeo Local
+
+| Funcionalidade             | Descrição                            |
+| -------------------------- | ------------------------------------ |
+| 📁 **Upload de Vídeo**     | Carregue vídeos do computador        |
+| 🖱️ **Drag & Drop**         | Arraste e solte arquivos para upload |
+| ▶️ **Player Completo**     | Play, pause, stop, seek, velocidade  |
+| ⏮️ **Navegação por Frame** | Avance ou retroceda frame a frame    |
+| 🔁 **Modo Loop**           | Repetição automática do vídeo        |
+| ⌨️ **Atalhos de Teclado**  | Espaço (play/pause), setas (frames)  |
+| 📝 **Legendas SRT**        | Geração de legendas sincronizadas    |
+
+### 🖼️ Imagem Estática
+
+| Funcionalidade          | Descrição                            |
+| ----------------------- | ------------------------------------ |
+| 📁 **Upload de Imagem** | Carregue imagens do computador       |
+| 🖱️ **Drag & Drop**      | Arraste e solte arquivos para upload |
+| 🔍 **Análise Única**    | Análise pontual da imagem carregada  |
+
+### 🌙 Interface
+
+| Funcionalidade         | Descrição                               |
+| ---------------------- | --------------------------------------- |
+| 🎨 **Tema Escuro**     | Interface moderna com Pico CSS          |
+| 📱 **Responsivo**      | Adaptável a diferentes tamanhos de tela |
+| 🔄 **Sistema de Abas** | Navegação intuitiva entre modos         |
 
 ## 🚀 Como Usar
 
@@ -72,9 +103,9 @@ O LM Studio é uma aplicação desktop que permite executar modelos de linguagem
 
 Na aba **Discover**, pesquise e baixe um dos modelos de visão recomendados:
 
-| Modelo                       | Tamanho | Descrição                              |
-| ---------------------------- | ------- | -------------------------------------- |
-| `SmolVLM-500M-Instruct-GGUF` | ~500MB  | Modelo leve, ideal para testes rápidos |
+| Modelo                       | Tamanho | Descrição                                                    |
+| ---------------------------- | ------- | ------------------------------------------------------------ |
+| `SmolVLM-500M-Instruct-GGUF` | ~500MB  | Modelo leve, ideal para testes rápidos                       |
 | `qwen2-vl-7b-instruct-GGUF`  | ~4-8GB  | Maior qualidade, requer mais recursos, funciona em português |
 
 > 💡 **Dica**: Para o SmolVLM, pesquise por "SmolVLM" e selecione a versão GGUF quantizada (ex: Q4_K_M).
@@ -117,13 +148,34 @@ Na aplicação web:
 ```
 realtime-webcam/
 ├── src/
-│   ├── index.html      # Página principal
-│   ├── camera_app.py   # Lógica Python (PyScript)
-│   └── styles.css      # Estilos customizados
-├── README.md           # Este arquivo
-├── LICENSE             # Licença MIT
-└── CITATION.bib        # Referência BibLaTeX
+│   ├── index.html        # Página principal com sistema de abas
+│   ├── camera_app.py     # Lógica Python (PyScript) - 9 classes
+│   └── styles.css        # Estilos customizados
+├── docs/
+│   └── class_diagram.md  # Diagrama UML de classes
+├── .gitignore            # Arquivos ignorados pelo Git
+├── README.md             # Este arquivo
+├── LICENSE               # Licença MIT
+└── CITATION.bib          # Referência BibLaTeX
 ```
+
+### 🏗️ Arquitetura de Classes
+
+O código Python está organizado em 9 classes:
+
+| Classe               | Responsabilidade               |
+| -------------------- | ------------------------------ |
+| `DOMElements`        | Cache de elementos HTML        |
+| `AppState`           | Estado global da aplicação     |
+| `APIClient`          | Comunicação com APIs de visão  |
+| `CaptionGenerator`   | Geração de legendas SRT        |
+| `WebcamManager`      | Gerenciamento da webcam        |
+| `VideoPlayerManager` | Player de vídeo local          |
+| `ImageAnalyzer`      | Análise de imagens             |
+| `TabManager`         | Navegação entre abas           |
+| `VisionApp`          | Classe principal orquestradora |
+
+Veja o diagrama completo em [`docs/class_diagram.md`](docs/class_diagram.md).
 
 ## 🛠️ Tecnologias
 
@@ -131,6 +183,7 @@ realtime-webcam/
 - **[Pico CSS](https://picocss.com/)** - Framework CSS minimalista
 - **MediaRecorder API** - Gravação de vídeo
 - **WebRTC** - Acesso à webcam
+- **File API** - Upload de arquivos
 
 ## 📚 Citação
 
@@ -157,8 +210,6 @@ Este projeto foi desenvolvido utilizando **engenharia de software assistida por 
 - ✅ Supervisão e revisão humana
 - ✅ Acompanhamento profissional
 - ✅ Validação de boas práticas
-
-O código gerado foi revisado, testado e ajustado por profissional qualificado.
 
 ## 📄 Licença
 
